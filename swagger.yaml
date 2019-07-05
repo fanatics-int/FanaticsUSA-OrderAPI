@@ -1,0 +1,145 @@
+swagger: '2.0'
+info:
+  version: v1
+  title: Order API
+  description: <h3>An API for Order Ingestion from Fanatics International, for Coupang</h3>
+paths:
+  '/api/v{version}/CreateOrder':
+    post:
+      tags:
+        - Order
+      summary: Create a new order and receive a response on the success of that create
+      operationId: CreateOrder
+      consumes: [
+        "application/json"
+      ]
+      produces: [
+        "application/json"
+      ]
+      parameters:
+        - name: version
+          in: path
+          required: true
+          type: string
+        - name: order
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/CreateOrder'
+        - name: x-frg-ct
+          in: header
+          required: true
+          type: string
+          description: A valid Bearer client auth token
+        - name: x-frg-ai
+          in: header
+          type: string
+          description: A valid app id
+        - name: x-frg-st
+          in: header
+          type: string
+          description: A valid site id
+      responses:
+        '200':
+          description: Order was successfully created
+          schema:
+            $ref: '#/definitions/OrderResponse'
+        '400':
+          description: Bad request, likely missing something in the request body
+        '500':
+          description: Unable to process CreateOrder request.
+          ##TODO: pass back a response object in 500 cases explaining why it failed.
+  '/api/v{version}/Health':
+    get:
+      tags:
+        - Health
+      summary: Health endpoint to confirm the service is up. Not a 100% guarantee everything is working, only that the service is listening
+      operationId: Health
+      parameters:
+        - name: version
+          in: path
+          required: true
+          type: string
+        - name: x-frg-ct
+          in: header
+          required: true
+          type: string
+          description: A valid Bearer client auth token
+        - name: x-frg-ai
+          in: header
+          type: string
+          description: A valid app id
+        - name: x-frg-st
+          in: header
+          type: string
+          description: A valid site id
+      responses:
+        '200':
+          description: Service is successfully listening, accepting, and returning requests
+definitions:
+  OrderResponse:
+    required:
+      - FanaticsOrderId
+      - State
+      - AcceptedItems
+    type: object
+    properties:
+      FanaticsOrderId:
+        description: The fanatics public order ID
+        type: string
+      State:
+        description: The state of the order at the time of the response
+        type: string
+        enum:
+          - PENDING
+      AcceptedItems:
+        description: The Items that were accepted and can be expected to be shipped relating to this order
+        type: array
+        items:
+          $ref: '#/definitions/Items'
+  CreateOrder:
+    required:
+      - SellerOrderId
+      - OrderCreationDate
+      - Items
+    type: object
+    properties:
+      SellerOrderId:
+        description: The Coupang Order ID (PO) of the order to be created
+        type: string
+      OrderCreationDate:
+        description: The epoch formatted date that is the time that coupang accepted the order
+        type: integer
+        format: int64
+      Items:
+        $ref: '#/definitions/Items'
+  Items:
+    type: array
+    items:
+      $ref: '#/definitions/Item'
+      minItems: 1
+  Item:
+    required:
+      - itemId
+      - productId
+      - quantity
+      - price
+    type: object
+    properties:
+      itemId:
+        type: integer
+        format: int64
+        minimum: 1
+      productId:
+        type: integer
+        format: int64
+        minimum: 1
+      quantity:
+        type: integer
+        format: int64
+        minimum: 1
+      size:
+        type: string
+      price:
+        type: number
+        format: double
